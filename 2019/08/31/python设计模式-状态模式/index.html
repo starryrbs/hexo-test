@@ -8,7 +8,7 @@
   
   
   
-  <title>饶宝仕的个人随笔</title>
+  <title>python设计模式-状态模式 | 饶宝仕的个人随笔</title>
 
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -207,63 +207,302 @@
 </script>
 
       
-<div class="container home-index">
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
   
-  <div class="post">
-    <h1 class="article-title">
-      <a href="/hexo-test/2019/08/31/python设计模式-状态模式/">
-        <span>python设计模式-状态模式</span>
-      </a>
-    </h1>
-    <!-- PC端文章信息 -->
-    <div class="article-top-meta pc-view">
-      <span>
-        发布时间 : 2019-08-31
-      </span>
-    </div>
-    <!-- 移动端文章信息 -->
-    <div class="article-top-meta mobile-view">
-      <span>
-        发布 : 2019-08-31
-      </span>
-      
-      
-        <span>
-          浏览 : <span class="article-timer" data-identity="python设计模式-状态模式"></span>
-        </span>
-      
-    </div>
+
+<div class="post">
+  <h1 class="article-title">
+    <span>python设计模式-状态模式</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-08-31
+    </span>
     
-    <!-- 文章简介 -->
-    <div class="article-content">
-      <div class="markdown-body article-content--inner" v-html="mdToHtml(psg.summary)">
-        
-      </div>
-    </div>
-    <div class="article-footer">
-      <div class="article-meta pull-left">
-        <!-- 分类pc端可见 -->
-        <span class="pc-view">
-          
-        <span>
-                    
-        </span>
-      </div>
-      
-        <div class="article-meta pull-right">
-          <span class="pc-view">
-            <i class="iconfont icon-view"></i>浏览: <span class="article-timer" data-identity="python设计模式-状态模式"></span>
-          </span>
-        </div>
-      
+    
+      <span>
+        浏览 : <span class="article-timer" data-identity="python设计模式-状态模式"></span>
+      </span>
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <blockquote>
+<p>状态模式是行为型模式</p>
+</blockquote>
+<h3 id="使用Python实现"><a href="#使用Python实现" class="headerlink" title="使用Python实现"></a>使用Python实现</h3><p>python 的代码采用的是“面向对象”的编程，没有过度使用函数式的闭包写法（python 写起来也不难）。</p>
+<p>因此，负责状态转化的类，专门拿出来单独封装。 其他 3 个状态类的状态，均由这个状态类来管理。</p>
+<pre><code>class StateTransform:
+    def __init__(self):
+        self.__state = &apos;download&apos;
+        self.states = [&apos;download&apos;, &apos;pause&apos;, &apos;handle_delete&apos;]
+
+    def change(self, state):
+        if (not state) and state not in self.states:
+            raise Exception(&apos;state is valid&apos;)
+        self.__state = state
+
+    def get_state(self):
+        return self.__state
+
+
+class DownloadState:
+    def __init__(self, transformer):
+        self.__state = &apos;download&apos;
+        self.__transformer = transformer
+
+    def click(self):
+        print(&quot;暂停下载&quot;)
+        self.__transformer.change(&apos;pause&apos;)
+
+    def delete(self):
+        print(&apos;请先暂停，再删除&apos;)
+
+
+class PauseState:
+    def __init__(self, transformer):
+        self.__state = &apos;pause&apos;
+        self.__transformer = transformer
+
+    def click(self):
+        print(&apos;继续下载&apos;)
+        self.__transformer.change(&apos;download&apos;)
+
+    def delete(self):
+        print(&apos;删除成功&apos;)
+        self.__transformer.change(&apos;handle_delete&apos;)
+
+
+class DeleteState:
+    def __init__(self, transformer):
+        self.__state = &apos;handle_delete&apos;
+        self.__transformer = transformer
+
+    def click(self):
+        print(&apos;任务已经被删除了，点击无效&apos;)
+
+    def delete(self):
+        print(&apos;任务不存在&apos;)
+
+
+class Download:
+    def __init__(self):
+        self.transformer = StateTransform()
+        self.state_map = {
+            &apos;download&apos;: DownloadState(self.transformer),
+            &apos;pause&apos;: PauseState(self.transformer),
+            &apos;handle_delete&apos;: DeleteState(self.transformer),
+        }
+
+    def handle_click(self):
+        self.state_map[self.transformer.get_state()].click()
+
+    def handle_delete(self):
+        self.state_map[self.transformer.get_state()].delete()
+
+
+if __name__ == &apos;__main__&apos;:
+    d = Download()
+    d.handle_click()
+    d.handle_click()
+    d.handle_delete()
+    d.handle_click()
+    d.handle_delete()
+    d.handle_click()
+    d.handle_click()</code></pre><h2 id="使用es6实现"><a href="#使用es6实现" class="headerlink" title="使用es6实现"></a>使用es6实现</h2><p>在 JavaScript 中，可以直接用 JSON 对象来代替状态类。</p>
+<p>下面代码展示的就是 FSM（有限状态机）里面有 3 种状态：download、pause、deleted。 控制状态转化的代码也在其中。</p>
+<p>DownLoad类就是，常说的Context对象，它的行为会随着状态的改变而改变。</p>
+<pre><code>const FSM = (() =&gt; {
+
+        let state = &apos;download&apos;;
+
+        return {
+            download: {
+                click: () =&gt; {
+                    console.log(&apos;任务已经暂停&apos;);
+                    state = &apos;pause&apos;;
+                },
+                delete: () =&gt; {
+                    console.log(&apos;下载中,请先暂停再删除&apos;);
+                },
+            },
+            pause: {
+                click: () =&gt; {
+                    console.log(&apos;任务继续下载&apos;);
+                    state = &apos;download&apos;
+                },
+                delete: () =&gt; {
+                    console.log(&apos;任务删除成功&apos;);
+                    state = &apos;delete&apos;;
+                }
+            },
+            delete: {
+                click: () =&gt; {
+                    console.log(&apos;任务已经被删除了，点击无效&apos;);
+                },
+                delete: () =&gt; {
+                    console.log(&apos;无法删除，任务已经被删除了&apos;);
+                }
+            },
+            getState: () =&gt; {
+                return state;
+            }
+        }
+    }
+)();
+
+class Download {
+    constructor(fsm) {
+        this.transformer = fsm;
+    }
+    handleClick() {
+        this.transformer[this.transformer.getState()].click();
+    }
+    handleDelete() {
+        this.transformer[this.transformer.getState()].delete();
+    }
+}
+
+let d = new Download(FSM);
+d.handleClick();
+d.handleClick();
+d.handleDelete();
+d.handleDelete();
+d.handleDelete();
+d.handleClick();
+d.handleDelete();
+d.handleClick();</code></pre><blockquote>
+<p>参考链接:</p>
+</blockquote>
+<p><a href="https://xin-tan.com/passages/2019-01-16-state-pattern/#_3-%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0" target="_blank" rel="noopener">设计模式-状态模式</a></p>
+
     </div>
   </div>
   
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : 饶宝仕 <br/>
+        
+        原文链接 : <a href="">https://starryrbs.github.io/hexo-test/2019/08/31/python设计模式-状态模式/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+    <div class="social-share"
+  style="margin-top: -2rem"
+  data-wechat-qrcode-title="<p>微信扫一扫</p>"
+  data-wechat-qrcode-helper="<p>微信右上角, 扫一扫分享</p>"
+   data-sites="qzone, qq, weibo, wechat, douban, google, facebook, twitter" 
+  
+>
+  <span style="color: #6b7487; font-size: 1.4rem;">分享到: </span>
+</div>
+<script src="https://cdn.bootcss.com/social-share.js/1.0.16/js/social-share.min.js" async>
+  
 
-  <nav class="page-navigation">
+  
+    <div id="reward">
+  
+    <p id="reward-meta">知识 & 情怀 | 二者兼得</p>
+  
+  <button id="reward-btn">
+    
+    <span>投食</span>
+  </button>
+  <div id="reward-qrcode">
+    
+      <div class="reward-qrcode--container">
+        <img class="qrcode-img" src="/images/wechat.png" alt="微信扫一扫, 向我投食">
+        <p class="qrcode-meta">微信扫一扫, 向我投食</p>
+      </div>
+    
+      <div class="reward-qrcode--container">
+        <img class="qrcode-img" src="/images/alipay.png" alt="支付宝扫一扫, 向我投食">
+        <p class="qrcode-meta">支付宝扫一扫, 向我投食</p>
+      </div>
+    
+  </div>
+
+</div>
+
+<script>
+  (() => {
+    let button = document.querySelector('#reward-btn'),
+      qrcode = document.querySelector('#reward-qrcode'),
+      display = false;
+    
+    button.addEventListener('click', () => {
+      qrcode.style.display = display ? 'none' : 'block'
+      display = !display
+    }, false)
+  })()
+</script>
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
     
     
   </nav>
+
+  
+    <a href="#comment" class="comment-anchor"></a>
+<div class="comment-title"><i class="iconfont icon-footprint"></i> 留下足迹 <i class="iconfont icon-footprint"></i></div>
+<div id="vcomments"></div>
+
+<script defer>
+  if( true ) {
+    let path = getRealPath()
+    new Valine({
+      el: "#vcomments",
+      appId: "Hyq9wkH495DgNHWhDQCOfQSp-gzGzoHsz",
+      appKey: "WaR7nrzhliHj9aVwdQzkdlGd",
+      notify: false,
+      verify: false,
+      avatar: "robohash",
+      placeholder: "正确填写邮箱, 才能及时收到回复哦♪(^∇^*)",
+      path
+    });
+  }
+</script>
+   
 
   
     <script defer>
@@ -338,7 +577,7 @@ const valineAPI = (() => {
 })()
 
 const calcAndWriteTimes = () => {
-  let isPost = false;
+  let isPost = true;
 
   let timerAllDOM = document.querySelectorAll(".article-timer");
 
@@ -393,6 +632,7 @@ if(true){
 }
 </script>
    
+
 </div>
 
 
